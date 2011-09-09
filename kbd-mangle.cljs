@@ -123,9 +123,11 @@
         c (.charCode e)
         s (String/fromCharCode c)]
     ;;(debug (str "key ["k"] char ["c"] str ["s"] "))
-    ;; only do stuff when the keycode is 0. otherwise, charcode is
-    ;; something crazy. I don't understand this.
-    (when (zero? k)
+    ;; when keycode is 0 (for "non-char" keys, roughly),
+    ;; String/fromCharCode gives weird junk. exception is enter (13),
+    ;; which gives \n. I don't understand this.
+    (when (or (zero? k)
+              (= c 13))
       (first (clean-text (String/fromCharCode c))))))
 
 ;; char can be nil, or something crazy. it's okay - will be ignored if
