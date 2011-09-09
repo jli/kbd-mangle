@@ -21,6 +21,9 @@
 (defn dbug [s]
   (dom/append (get-elt "dbug") s))
 
+(defn set-txt [str]
+  (set! (.value (get-elt "txt")) str))
+
 ;;; data
 
 (def special-lowercase
@@ -146,11 +149,37 @@
           \v [590 275]
           \z [644 275]}))
 
+(def texts
+  {
+   :lorem "Lorem ipsum dolor sit amet, consectetur adipisicing elit,
+sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
+ut aliquip ex ea commodo consequat. Duis aute irure dolor in
+reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
+pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
+culpa qui officia deserunt mollit anim id est laborum."
+
+   ;; http://hipsteripsum.me/ <3
+   :hipster "Wolf craft beer sint, irure echo park nostrud cardigan
+synth labore organic mollit ut fap velit vero. Hoodie Austin terry
+richardson +1 squid, iphone quinoa nesciunt magna accusamus esse etsy
+odio deserunt. Occaecat in sartorial, wes anderson homo gentrify
+scenester aliqua. Echo park nulla PBR dolor banksy. Cosby sweater
+keytar voluptate, aesthetic viral sartorial enim adipisicing ut
+chambray jean shorts. Aesthetic salvia echo park, vegan yr irony
+deserunt dolore labore. Trust fund butcher biodiesel sustainable,
+artisan wes anderson terry richardson excepteur gluten-free hoodie
+placeat."
+   })
+
+
+
 
 
 ;;; heat interface
 
 (defn create-heat [cfg coord-map]
+  ;; TODO merp, window.h337 doesn't work in advanced mode
   {:heat (window.h337.create cfg)
    :coord coord-map})
 
@@ -199,7 +228,11 @@
                    [["kbd-qwerty" qwerty->coord]
                     ["kbd-dvorak" dvorak->coord]])
         get-txt (fn [] (.value (get-elt "txt")))
-        len (atom (count (get-txt)))]
+        len (atom (count (get-txt)))
+        reset-txt (fn [str]
+                    (set-txt str)
+                    (doseq [h heats] (init-heat h (get-txt)))
+                    (reset! len (count (get-txt))))]
     (doseq [h heats] (init-heat h (get-txt)))
     ;; charCode only available on KEYPRESS
     ;; setting/checking len works better on KEYUP
@@ -212,8 +245,23 @@
                        (when (< (count txt) @len)
                          (doseq [h heats] (init-heat h txt)))
                        (reset! len (count txt)))))
+    ;; reset
     (events/listen (get-elt "reset") goog.events.EventType.CLICK
-                   (fn []
-                     (set! (.value (get-elt "txt")) "")
-                     (doseq [h heats] (init-heat h (get-txt)))
-                     (reset! len 0)))))
+                   (fn [_] (reset-txt "")))
+    ;; sample text
+    ;; TODO use class instead of id
+
+    ;; whoa, clojurescript bug? or maybe I don't understand (.id ...).
+    ;; id printing as expected, but when clicked, id is always that of
+    ;; last button.
+    ;; (doseq [button [(get-elt "lorem") (get-elt "hipster")]]
+    ;;   (let [id (.id button)]
+    ;;     (debug (str "setting button listener: " id))
+    ;;     (events/listen button goog.events.EventType.CLICK
+    ;;                    (fn [_]
+    ;;                      (debug (str "got event! id is NOW: " id))
+    ;;                      (reset-txt (texts (keyword id)))))))
+    (events/listen (get-elt "lorem") goog.events.EventType.CLICK
+                   (fn [_] (reset-txt (texts :lorem))))
+    (events/listen (get-elt "hipster") goog.events.EventType.CLICK
+                   (fn [_] (reset-txt (texts :hipster))))))
