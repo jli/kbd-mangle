@@ -1,5 +1,6 @@
 (ns kbd-mangle.main
   (:require [goog.events.EventType :as EventType]
+            [goog.events.KeyCodes :as KeyCodes]
             [goog.Timer :as Timer]
             [goog.events :as events]
             [goog.dom :as dom]))
@@ -15,11 +16,12 @@
 (defn js-alert [msg]
   (js* "alert(~{msg})"))
 
-(defn dbug
-  ([s] (dbug s "dbug"))
-  ([s elt]
-     (dom/append (get-elt elt) s)
-     (dom/append (get-elt elt) (html "<br>"))))
+(defn debug [s]
+  (dom/append (get-elt "dbug") s)
+  (dom/append (get-elt "dbug") (html "<br>")))
+
+(defn dbug [s]
+  (dom/append (get-elt "dbug") s))
 
 ;;; data
 
@@ -44,16 +46,15 @@
     \" \'
     \< \,
     \> \.
-    \? \/})
+    \? \/ })
 
 (defn deshift [c]
   (. (get special-lowercase c c) (toLowerCase)))
 
 (defn clean-text [str]
-  ;;(for [c str :when (not (ignore-chars c))] (deshift c))
-  (map deshift str)
-  )
+  (for [c str :when (not (ignore-chars c))] (deshift c)))
 
+;; only has unshifted characters. deshift first.
 (def qwerty-key->coord
   { \` [35 120]
     \1 [90 120]
@@ -102,26 +103,53 @@
     \, [536 275]
     \. [590 275]
     \/ [644 275]
-    \space [375 335] })
+    \space [375 335]
+    ;; don't understand when one or the other works
+    \newline [745 225]
+    \return [745 225]
+    })
 
-(defn initialize-heat [heat text]
+(defn init-heat [heat text]
   (let [freqs (frequencies (clean-text text))
-        data (map (fn [[char count]]
-                    (if-let [[x y] (qwerty-key->coord char)]
-                      {"x" x "y" y "count" count}
-                      ;; eventually just ignore, for weird unicode junk and stuff
-                      (dbug (str "weird, unhandled char: " char count))))
-                  freqs)
-        ;; better than (apply max freqs) because it handles empty text
+        data (for [[char count] freqs :when (contains? qwerty-key->coord char)]
+               (let [[x y] (qwerty-key->coord char)]
+                 {"x" x "y" y "count" count}))
         dataset (.strobj {"max" (reduce max 0 (vals freqs))
                           "data" (apply array (map #(.strobj %) data))})]
     (.. heat store (setDataSet dataset))))
 
-;; Initialize heatmap and set handlers on txt textarea for updating.
+(defn event->char [e]
+  (let [k (.keyCode e)
+        c (.charCode e)
+        s (String/fromCharCode c)]
+    ;;(debug (str "key ["k"] char ["c"] str ["s"] "))
+    ;; only do stuff when the keycode is 0. otherwise, charcode is
+    ;; something crazy. I don't understand this.
+    (when (zero? k)
+      (first (clean-text (String/fromCharCode c))))))
+
+;; char can be nil, or something crazy. it's okay - will be ignored if
+;; not in coordinate map
+(defn update-heat [heat char]
+  (if-let [[x y] (qwerty-key->coord char)]
+    (do
+      ;(dbug (str "<"char ">"))
+      (.. heat store (addDataPoint x y)))))
+
+;; initialize heatmap and set handlers on txt textarea for updating.
 (defn ^:export thundercats-are-go []
-  (let [cfg {"visible" true "opacity" 40}
+  (let [cfg {"visible" true "opacity" 40 "radius" 50}
         qcfg (assoc cfg "element" "kbd-qwerty")
-        qheat (window.h337.create (.strobj qcfg))]
-    (initialize-heat qheat (.value (get-elt txt-id)))
+        qheat (window.h337.create (.strobj qcfg))
+        get-txt (fn [] (.value (get-elt txt-id)))
+        len (atom (count (get-txt)))]
+    (init-heat qheat (get-txt))
+    ;; charCode only available on KEYPRESS
+    ;; setting/checking len works better on KEYUP
+    (events/listen (get-elt txt-id) goog.events.EventType.KEYPRESS
+                   (fn [e] (update-heat qheat (event->char e))))
     (events/listen (get-elt txt-id) goog.events.EventType.KEYUP
-                   #(initialize-heat qheat (.value (get-elt txt-id))))))
+                   (fn [_]
+                     (let [txt (get-txt)]
+                       (when (< (count txt) @len) (init-heat qheat txt))
+                       (reset! len (count txt)))))))
