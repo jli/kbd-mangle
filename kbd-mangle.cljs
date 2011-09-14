@@ -1,5 +1,6 @@
 (ns kbd-mangle.main
-  (:require [goog.events.EventType :as EventType]
+  (:require [kbd-mangle.data :as data]
+            [goog.events.EventType :as EventType]
             [goog.events.KeyCodes :as KeyCodes]
             [goog.Timer :as Timer]
             [goog.events :as events]
@@ -24,155 +25,11 @@
 (defn set-txt [str]
   (set! (.value (get-elt "txt")) str))
 
-;;; data
-
-(def special-lowercase
-  { \~ \`
-    \! \1
-    \@ \2
-    \# \3
-    \$ \4
-    \% \5
-    \^ \6
-    \& \7
-    \* \8
-    \( \9
-    \) \0
-    \_ \-
-    \+ \=
-    \{ \[
-    \} \]
-    \| \\
-    \: \;
-    \" \'
-    \< \,
-    \> \.
-    \? \/ })
-
 (defn deshift [c]
-  (. (get special-lowercase c c) (toLowerCase)))
+  (. (data/special-lowercase c c) (toLowerCase)))
 
 (defn clean-text [str]
   (for [c str :when (not (ignore-chars c))] (deshift c)))
-
-(def common-coord
-  {\` [35 120]
-   \1 [90 120]
-   \2 [144 120]
-   \3 [198 120]
-   \4 [253 120]
-   \5 [307 120]
-   \6 [361 120]
-   \7 [415 120]
-   \8 [469 120]
-   \9 [524 120]
-   \0 [579 120]
-   \\ [764 174]
-   \space [375 335]
-   ;; don't understand when one or the other works
-   \newline [745 225]
-   \return [745 225]})
-
-(def qwerty->coord
-  (merge common-coord
-         {\- [630 120]
-          \= [685 120]
-          \q [115 174]
-          \w [169 174]
-          \e [224 174]
-          \r [278 174]
-          \t [332 174]
-          \y [386 174]
-          \u [440 174]
-          \i [494 174]
-          \o [548 174]
-          \p [602 174]
-          \[ [656 174]
-          \] [710 174]
-          \a [130 225]
-          \s [184 225]
-          \d [238 225]
-          \f [292 225]
-          \g [346 225]
-          \h [400 225]
-          \j [454 225]
-          \k [508 225]
-          \l [562 225]
-          \; [616 225]
-          \' [670 225]
-          \z [158 275]
-          \x [212 275]
-          \c [266 275]
-          \v [320 275]
-          \b [374 275]
-          \n [428 275]
-          \m [482 275]
-          \, [536 275]
-          \. [590 275]
-          \/ [644 275]}))
-
-(def dvorak->coord
-  (merge common-coord
-         {\[ [630 120]
-          \] [685 120]
-          \' [115 174]
-          \, [169 174]
-          \. [224 174]
-          \p [278 174]
-          \y [332 174]
-          \f [386 174]
-          \g [440 174]
-          \c [494 174]
-          \r [548 174]
-          \l [602 174]
-          \/ [656 174]
-          \= [710 174]
-          \a [130 225]
-          \o [184 225]
-          \e [238 225]
-          \u [292 225]
-          \i [346 225]
-          \d [400 225]
-          \h [454 225]
-          \t [508 225]
-          \n [562 225]
-          \s [616 225]
-          \- [670 225]
-          \; [158 275]
-          \q [212 275]
-          \j [266 275]
-          \k [320 275]
-          \x [374 275]
-          \b [428 275]
-          \m [482 275]
-          \w [536 275]
-          \v [590 275]
-          \z [644 275]}))
-
-(def texts
-  {
-   :lorem "Lorem ipsum dolor sit amet, consectetur adipisicing elit,
-sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
-enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi
-ut aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum."
-
-   ;; http://hipsteripsum.me/ <3
-   :hipster "Wolf craft beer sint, irure echo park nostrud cardigan
-synth labore organic mollit ut fap velit vero. Hoodie Austin terry
-richardson +1 squid, iphone quinoa nesciunt magna accusamus esse etsy
-odio deserunt. Occaecat in sartorial, wes anderson homo gentrify
-scenester aliqua. Echo park nulla PBR dolor banksy. Cosby sweater
-keytar voluptate, aesthetic viral sartorial enim adipisicing ut
-chambray jean shorts. Aesthetic salvia echo park, vegan yr irony
-deserunt dolore labore. Trust fund butcher biodiesel sustainable,
-artisan wes anderson terry richardson excepteur gluten-free hoodie
-placeat."
-   })
-
-
 
 
 
@@ -225,8 +82,8 @@ placeat."
   (let [cfg {"visible" true "opacity" 50 "radius" 40}
         heats (map (fn [[elt coord]]
                      (create-heat (.strobj (assoc cfg "element" elt)) coord))
-                   [["kbd-qwerty" qwerty->coord]
-                    ["kbd-dvorak" dvorak->coord]])
+                   [["kbd-qwerty" data/qwerty->coord]
+                    ["kbd-dvorak" data/dvorak->coord]])
         get-txt (fn [] (.value (get-elt "txt")))
         len (atom (count (get-txt)))
         reset-txt (fn [str]
@@ -262,6 +119,10 @@ placeat."
     ;;                      (debug (str "got event! id is NOW: " id))
     ;;                      (reset-txt (texts (keyword id)))))))
     (events/listen (get-elt "lorem") goog.events.EventType.CLICK
-                   (fn [_] (reset-txt (texts :lorem))))
+                   (fn [_] (reset-txt (data/texts :lorem))))
     (events/listen (get-elt "hipster") goog.events.EventType.CLICK
-                   (fn [_] (reset-txt (texts :hipster))))))
+                   (fn [_] (reset-txt (data/texts :hipster))))
+    (events/listen (get-elt "clojure") goog.events.EventType.CLICK
+                   (fn [_] (reset-txt (data/texts :clojure))))
+    (events/listen (get-elt "javascript") goog.events.EventType.CLICK
+                   (fn [_] (reset-txt (data/texts :javascript))))))
