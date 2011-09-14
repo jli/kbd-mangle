@@ -4,7 +4,8 @@
             [goog.events.KeyCodes :as KeyCodes]
             [goog.Timer :as Timer]
             [goog.events :as events]
-            [goog.dom :as dom]))
+            [goog.dom :as dom]
+            [goog.array :as array]))
 
 ;;; utils
 
@@ -106,23 +107,17 @@
     (events/listen (get-elt "reset") goog.events.EventType.CLICK
                    (fn [_] (reset-txt "")))
     ;; sample text
-    ;; TODO use class instead of id
-
-    ;; whoa, clojurescript bug? or maybe I don't understand (.id ...).
-    ;; id printing as expected, but when clicked, id is always that of
-    ;; last button.
-    ;; (doseq [button [(get-elt "lorem") (get-elt "hipster")]]
-    ;;   (let [id (.id button)]
-    ;;     (debug (str "setting button listener: " id))
-    ;;     (events/listen button goog.events.EventType.CLICK
-    ;;                    (fn [_]
-    ;;                      (debug (str "got event! id is NOW: " id))
-    ;;                      (reset-txt (texts (keyword id)))))))
-    (events/listen (get-elt "lorem") goog.events.EventType.CLICK
-                   (fn [_] (reset-txt (data/texts :lorem))))
-    (events/listen (get-elt "hipster") goog.events.EventType.CLICK
-                   (fn [_] (reset-txt (data/texts :hipster))))
-    (events/listen (get-elt "clojure") goog.events.EventType.CLICK
-                   (fn [_] (reset-txt (data/texts :clojure))))
-    (events/listen (get-elt "javascript") goog.events.EventType.CLICK
-                   (fn [_] (reset-txt (data/texts :javascript))))))
+    (doseq [button (array/toArray (dom/getElementsByClass "txtselect"))]
+      (let [text (data/texts (keyword (.id button)))]
+        (events/listen button goog.events.EventType.CLICK
+                      (fn [_] (reset-txt text)))))
+    ;; need to use this if using unpatched compiler
+    ;; (events/listen (get-elt "lorem") goog.events.EventType.CLICK
+    ;;                (fn [_] (reset-txt (data/texts :lorem))))
+    ;; (events/listen (get-elt "hipster") goog.events.EventType.CLICK
+    ;;                (fn [_] (reset-txt (data/texts :hipster))))
+    ;; (events/listen (get-elt "clojure") goog.events.EventType.CLICK
+    ;;                (fn [_] (reset-txt (data/texts :clojure))))
+    ;; (events/listen (get-elt "javascript") goog.events.EventType.CLICK
+    ;;                (fn [_] (reset-txt (data/texts :javascript))))
+    ))
