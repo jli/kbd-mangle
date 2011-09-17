@@ -37,15 +37,16 @@
 ;;; heat interface
 
 (defn create-heat [cfg coord-map]
-  ;; TODO merp, window.h337 doesn't work in advanced mode
   {:heat (window.h337.create cfg)
    :coord coord-map})
 
+;; ack, really? oh well.
 (defn set-dataset [{heat :heat} dataset]
-  (.. heat store (setDataSet dataset)))
+  (.setDataSet (js* "~{heat}['store']") dataset))
 
 (defn add-point [{heat :heat} x y]
-  (.. heat store (addDataPoint x y)))
+  (.addDataPoint (js* "~{heat}['store']") x y))
+
 
 ;;; events
 
@@ -110,14 +111,5 @@
     (doseq [button (array/toArray (dom/getElementsByClass "txtselect"))]
       (let [text (data/texts (keyword (.id button)))]
         (events/listen button goog.events.EventType.CLICK
-                      (fn [_] (reset-txt text)))))
-    ;; need to use this if using unpatched compiler
-    ;; (events/listen (get-elt "lorem") goog.events.EventType.CLICK
-    ;;                (fn [_] (reset-txt (data/texts :lorem))))
-    ;; (events/listen (get-elt "hipster") goog.events.EventType.CLICK
-    ;;                (fn [_] (reset-txt (data/texts :hipster))))
-    ;; (events/listen (get-elt "clojure") goog.events.EventType.CLICK
-    ;;                (fn [_] (reset-txt (data/texts :clojure))))
-    ;; (events/listen (get-elt "javascript") goog.events.EventType.CLICK
-    ;;                (fn [_] (reset-txt (data/texts :javascript))))
-    ))
+                      (fn [_] (reset-txt text)))))))
+
