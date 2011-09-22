@@ -7,6 +7,8 @@ Inspired by [Patrick Wied's](http://www.patrick-wied.at/) [keyboard
 heatmap](http://www.patrick-wied.at/static/heatmapjs/). Just a small
 modification and a bit of layout propaganda.
 
+A demo: http://circularly.org/mangle/
+
 ## License
 
 Copyright (C) 2011 WTFPL
