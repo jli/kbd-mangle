@@ -62,8 +62,7 @@
 
 (defn event->char [e]
   (let [k (.keyCode e)
-        c (.charCode e)
-        s (String/fromCharCode c)]
+        c (.charCode e)]
     ;;(debug (str "key ["k"] char ["c"] str ["s"] "))
     ;; when keycode is 0 (for "non-char" keys, roughly),
     ;; String/fromCharCode gives weird junk. exception is enter (13),
